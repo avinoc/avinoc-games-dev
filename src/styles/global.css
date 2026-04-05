@@ -118,6 +118,18 @@
   --accent-ice: #3b82f6;
 }
 
+[data-game="chaoszero"] {
+  --accent: #a855f7;
+  --accent-strong: #7c3aed;
+  --accent-ice: #c084fc;
+}
+
+[data-game="epicseven"] {
+  --accent: #f97316;
+  --accent-strong: #ea580c;
+  --accent-ice: #fb923c;
+}
+
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 

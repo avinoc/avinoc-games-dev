@@ -40,6 +40,30 @@ export const games: GameEntry[] = [
       { label: "Fleet Builder", href: "/lagrange/fleet-builder" },
     ],
   },
+  {
+    id: "chaoszero",
+    name: "Chaos Zero Nightmare",
+    slug: "chaoszero",
+    description: "Great Rift domination hub with imported screenshot builds, card overlap, and tactical breakdowns",
+    status: "active",
+    accentColor: "purple",
+    icon: "/assets/chaoszero/icon.png",
+    routes: [
+      { label: "Event Scores", href: "/chaoszero/event-scores/" },
+      { label: "Build Database", href: "/chaoszero/builds/" },
+      { label: "Card Overlap", href: "/chaoszero/card-overlap/" },
+    ],
+  },
+  {
+    id: "epicseven",
+    name: "Epic Seven",
+    slug: "epicseven",
+    description: "Tools, guides, and database information for Epic Seven",
+    status: "coming-soon",
+    accentColor: "orange",
+    icon: "/assets/epicseven/icon.png",
+    routes: [],
+  },
 ];
 
 export function getGameBySlug(slug: string): GameEntry | undefined {
