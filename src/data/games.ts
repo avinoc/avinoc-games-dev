@@ -50,7 +50,19 @@ export const games: GameEntry[] = [
     icon: "/assets/chaoszero/icon.png",
     routes: [
       { label: "Event Scores", href: "/chaoszero/event-scores/" },
+      { label: "Builds", href: "/chaoszero/builds/" },
+      { label: "Card Overlap", href: "/chaoszero/card-overlap/" },
     ],
+  },
+  {
+    id: "epicseven",
+    name: "Epic Seven",
+    slug: "epicseven",
+    description: "Tools, guides, and database information for Epic Seven",
+    status: "coming-soon",
+    accentColor: "orange",
+    icon: "/assets/epicseven/icon.png",
+    routes: [],
   },
 ];
 
