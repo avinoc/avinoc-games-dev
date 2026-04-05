@@ -1,156 +1,57 @@
 ---
 import GameLayout from "../../../layouts/GameLayout.astro";
-const base = import.meta.env.BASE_URL;
+import {
+  currentEvent,
+  getAllBuilds,
+  getEventTotal,
+  getTeamTotal,
+} from "../../../data/chaoszero/event-scores";
 
-interface BuildCard {
-  id: string;
-  team: string;
-  buildNum: string;
-  title: string;
-  description: string;
-  score: number;
-  saveDate: string;
-  cardCount: number;
-  faintMemory: number;
-  copies: number;
-  removes: number;
-  cards: { name: string; count: number }[];
-  image: string;
+const base = import.meta.env.BASE_URL;
+const teams = currentEvent.teams.map((team) => ({
+  ...team,
+  total: getTeamTotal(team),
+}));
+const allBuilds = getAllBuilds(currentEvent).map((build) => {
+  const team = teams.find((entry) => entry.id === build.teamId);
+
+  return {
+    ...build,
+    teamLabel: team?.label ?? "Team",
+    teamSummary: team?.summary ?? "",
+  };
+});
+const eventTotal = getEventTotal(currentEvent);
+const topBuild = allBuilds.reduce((best, build) => (build.score > best.score ? build : best), allBuilds[0]);
+const defaultBuildId = topBuild.id;
+
+const repeatedCardMap = new Map<string, number>();
+
+for (const build of allBuilds) {
+  for (const card of build.cards) {
+    const current = repeatedCardMap.get(card.name) ?? 0;
+    repeatedCardMap.set(card.name, Math.max(current, card.count));
+  }
 }
 
-const builds: BuildCard[] = [
-  {
-    id: "team-1-build-1",
-    team: "Team 1",
-    buildNum: "01",
-    title: "Ironclad Counterblade loop",
-    description: "The highest-scoring opener on Team 1, anchored by Hew (Ironclad), Fighting Spirit, and double Spore Harvester copies.",
-    score: 66390,
-    saveDate: "26.02.17",
-    cardCount: 8,
-    faintMemory: 180,
-    copies: 3,
-    removes: 4,
-    cards: [
-      { name: "Hew (Ironclad)", count: 1 },
-      { name: "Fatal Strike", count: 1 },
-      { name: "Counterblade", count: 1 },
-      { name: "Fighting Spirit", count: 2 },
-      { name: "Spore Harvester", count: 2 },
-    ],
-    image: "/assets/chaoszero/builds/team-1-build-1.png",
-  },
-  {
-    id: "team-1-build-2",
-    team: "Team 1",
-    buildNum: "02",
-    title: "Darkness sustain stack",
-    description: "A compact sustain build that leans on repeated Snack Time copies with darkness scaling and one burst opener.",
-    score: 63770,
-    saveDate: "26.02.21",
-    cardCount: 6,
-    faintMemory: 180,
-    copies: 3,
-    removes: 5,
-    cards: [
-      { name: "Strike of Darkness", count: 1 },
-      { name: "Resonating Darkness", count: 1 },
-      { name: "Snack Time", count: 4 },
-    ],
-    image: "/assets/chaoszero/builds/team-1-build-2.png",
-  },
-  {
-    id: "team-1-build-3",
-    team: "Team 1",
-    buildNum: "03",
-    title: "Repose utility shell",
-    description: "The leanest Team 1 list. Triple Repose keeps the hand moving while Pendant of Resolution and Sir Kowalski set timing.",
-    score: 63910,
-    saveDate: "26.03.06",
-    cardCount: 5,
-    faintMemory: 180,
-    copies: 2,
-    removes: 5,
-    cards: [
-      { name: "Repose", count: 3 },
-      { name: "Pendant of Resolution", count: 1 },
-      { name: "Sir Kowalski", count: 1 },
-    ],
-    image: "/assets/chaoszero/builds/team-1-build-3.png",
-  },
-  {
-    id: "team-2-build-1",
-    team: "Team 2",
-    buildNum: "01",
-    title: "Chrono flame setup",
-    description: "Chronicle-based setup that turns into triple Flame of Eternity scaling for the second team's control lane.",
-    score: 59450,
-    saveDate: "26.03.25",
-    cardCount: 7,
-    faintMemory: 150,
-    copies: 2,
-    removes: 4,
-    cards: [
-      { name: "Chrono Archon", count: 1 },
-      { name: "Time Axis Collapse", count: 1 },
-      { name: "Chrono Circle", count: 1 },
-      { name: "Time Paradox", count: 1 },
-      { name: "Flame of Eternity", count: 3 },
-    ],
-    image: "/assets/chaoszero/builds/team-2-build-1.png",
-  },
-  {
-    id: "team-2-build-2",
-    team: "Team 2",
-    buildNum: "02",
-    title: "Quantum Seed creation core",
-    description: "The highest individual score in the screenshot pack. It runs triple Quantum Seed with Dual Creation and double Reorganize.",
-    score: 70360,
-    saveDate: "26.03.29",
-    cardCount: 7,
-    faintMemory: 180,
-    copies: 2,
-    removes: 5,
-    cards: [
-      { name: "Quantum Seed", count: 3 },
-      { name: "Dual Creation", count: 1 },
-      { name: "Event Horizon", count: 1 },
-      { name: "Reorganize", count: 2 },
-    ],
-    image: "/assets/chaoszero/builds/team-2-build-2.png",
-  },
-  {
-    id: "team-2-build-3",
-    team: "Team 2",
-    buildNum: "03",
-    title: "Source of Water sustain engine",
-    description: "A six-card wave sustain list using four Source of Water copies with Tactical Analysis and Deluge to round the line out.",
-    score: 64280,
-    saveDate: "26.03.24",
-    cardCount: 6,
-    faintMemory: 180,
-    copies: 3,
-    removes: 5,
-    cards: [
-      { name: "Source of Water", count: 4 },
-      { name: "Tactical Analysis", count: 1 },
-      { name: "Deluge", count: 1 },
-    ],
-    image: "/assets/chaoszero/builds/team-2-build-3.png",
-  },
-];
+const stackHighlights = [...repeatedCardMap.entries()]
+  .filter(([, count]) => count > 1)
+  .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+  .slice(0, 4)
+  .map(([name, count]) => `${name} ×${count}`);
 
-const team1Total = builds.filter((b) => b.team === "Team 1").reduce((sum, b) => sum + b.score, 0);
-const team2Total = builds.filter((b) => b.team === "Team 2").reduce((sum, b) => sum + b.score, 0);
-const combinedTotal = team1Total + team2Total;
+function formatScore(score: number): string {
+  return score.toLocaleString("en-US");
+}
 ---
 
 <GameLayout
   title="Event Scores | Chaos Zero Nightmare"
   description="Screenshot-driven Great Rift top-score build viewer for Chaos Zero Nightmare."
   game="chaoszero"
+  hideSubnav={true}
 >
-  <section class="cz-page">
+  <div class="cz-page">
     <div class="cz-page__noise" aria-hidden="true"></div>
 
     <section class="container cz-overview">
@@ -160,54 +61,80 @@ const combinedTotal = team1Total + team2Total;
         </svg>
         Chaos Zero hub
       </a>
+
       <p class="cz-kicker">Great Rift top-score viewer</p>
-      <h1>Great Rift Top Score Build Pack</h1>
+      <h1>{currentEvent.name}</h1>
       <p class="cz-overview__summary">
-        Imported from six build screenshots. Select any build below to inspect the original sheet,
-        card counts, and team totals without placeholder event data.
+        Imported from your six build screenshots. Select any build below to inspect the original sheet, card counts, and team totals without placeholder event data.
       </p>
+
       <div class="cz-overview__totals">
-        <div class="cz-total-pill">
-          <span>Team 1</span>
-          <strong>{team1Total.toLocaleString()} TB</strong>
-        </div>
-        <div class="cz-total-pill">
-          <span>Team 2</span>
-          <strong>{team2Total.toLocaleString()} TB</strong>
-        </div>
+        {teams.map((team) => (
+          <div class="cz-total-pill">
+            <span>{team.label}</span>
+            <strong>{formatScore(team.total)} TB</strong>
+          </div>
+        ))}
         <div class="cz-total-pill cz-total-pill--combined">
           <span>Combined</span>
-          <strong>{combinedTotal.toLocaleString()} TB</strong>
+          <strong>{formatScore(eventTotal)} TB</strong>
         </div>
       </div>
     </section>
 
     <section class="container cz-top-grid">
       <div class="cz-feature-stack">
-        {builds.map((build) => (
-          <article class="cz-feature-card" data-feature-card data-build-id={build.id} aria-hidden="true">
+        {allBuilds.map((build) => (
+          <article
+            class:list={["cz-feature-card", { "is-active": build.id === defaultBuildId }]}
+            data-feature-card
+            data-build-id={build.id}
+            aria-hidden={build.id === defaultBuildId ? "false" : "true"}
+          >
             <div class="cz-feature-card__copy">
               <div class="cz-feature-card__meta">
-                <span>{build.team}</span>
-                <span>Build {build.buildNum}</span>
+                <span>{build.teamLabel}</span>
+                <span>{build.label}</span>
               </div>
-              <h2>{build.title}</h2>
-              <p>{build.description}</p>
-              <div class="cz-score-pill">{build.score.toLocaleString()} TB</div>
+              <h2>{build.focus}</h2>
+              <p>{build.summary}</p>
+
+              <div class="cz-score-pill">{formatScore(build.score)} TB</div>
+
               <div class="cz-stat-grid">
-                <div><span>Save date</span><strong>{build.saveDate}</strong></div>
-                <div><span>Card count</span><strong>{build.cardCount}</strong></div>
-                <div><span>Faint memory</span><strong>{build.faintMemory} pts</strong></div>
-                <div><span>Copy / Remove</span><strong>{build.copies} / {build.removes}</strong></div>
+                <div>
+                  <span>Save date</span>
+                  <strong>{build.saveDate}</strong>
+                </div>
+                <div>
+                  <span>Card count</span>
+                  <strong>{build.cardCount}</strong>
+                </div>
+                <div>
+                  <span>Faint memory</span>
+                  <strong>{build.faintMemory} pts</strong>
+                </div>
+                <div>
+                  <span>Copy / Remove</span>
+                  <strong>{build.copyCount} / {build.removeCount}</strong>
+                </div>
               </div>
+
               <div class="cz-card-chip-row">
                 {build.cards.map((card) => (
-                  <span class="cz-card-chip">{card.count > 1 ? `${card.name} ×${card.count}` : card.name}</span>
+                  <span class="cz-card-chip">{card.name}{card.count > 1 ? ` ×${card.count}` : ""}</span>
                 ))}
               </div>
             </div>
+
             <div class="cz-feature-card__media">
-              <img src={build.image} alt={`${build.team} Build ${build.buildNum} screenshot`} width="1024" height="768" loading="lazy" />
+              <img
+                src={build.previewImage}
+                alt={`${build.teamLabel} ${build.label} screenshot`}
+                width="1024"
+                height="768"
+                loading="lazy"
+              />
             </div>
           </article>
         ))}
@@ -216,17 +143,17 @@ const combinedTotal = team1Total + team2Total;
       <aside class="cz-side-stack">
         <div class="cz-side-card">
           <span class="cz-side-card__label">Top single build</span>
-          <strong>Team 2 Build 02</strong>
-          <p>Quantum Seed creation core</p>
-          <div class="cz-score-pill">70,360 TB</div>
+          <strong>{topBuild.teamLabel} {topBuild.label}</strong>
+          <p>{topBuild.focus}</p>
+          <div class="cz-score-pill">{formatScore(topBuild.score)} TB</div>
         </div>
+
         <div class="cz-side-card">
           <span class="cz-side-card__label">Most repeated stacks</span>
           <div class="cz-card-chip-row">
-            <span class="cz-card-chip">Snack Time ×4</span>
-            <span class="cz-card-chip">Source of Water ×4</span>
-            <span class="cz-card-chip">Flame of Eternity ×3</span>
-            <span class="cz-card-chip">Quantum Seed ×3</span>
+            {stackHighlights.map((card) => (
+              <span class="cz-card-chip">{card}</span>
+            ))}
           </div>
         </div>
       </aside>
@@ -240,53 +167,54 @@ const combinedTotal = team1Total + team2Total;
             <h2>Build selector</h2>
           </div>
         </div>
+
         <div class="cz-selector-groups">
-          {["Team 1", "Team 2"].map((team) => {
-            const teamBuilds = builds.filter((b) => b.team === team);
-            const teamTotal = teamBuilds.reduce((sum, b) => sum + b.score, 0);
-            return (
-              <section class="cz-selector-group">
-                <header class="cz-selector-group__header">
-                  <div>
-                    <span>{team}</span>
-                    <p>
-                      {team === "Team 1"
-                        ? "Burst-first opener group from the current top Great Rift clear. This side handles the front-loaded damage lane."
-                        : "Longer-cycle control and creation side from the same top run. This team closes with sustain, scaling, and card creation."}
-                    </p>
-                  </div>
-                  <strong>{teamTotal.toLocaleString()} TB</strong>
-                </header>
-                <div class="cz-selector-list">
-                  {teamBuilds.map((build) => (
-                    <button
-                      class="cz-selector-button"
-                      data-build-button
-                      data-build-id={build.id}
-                      id={build.id}
-                      type="button"
-                      aria-pressed="false"
-                    >
-                      <img src={build.image} alt="" width="256" height="144" loading="lazy" />
-                      <div class="cz-selector-button__body">
-                        <div class="cz-selector-button__top">
-                          <strong>Build {build.buildNum}</strong>
-                          <span>{build.score.toLocaleString()} TB</span>
-                        </div>
-                        <h3>{build.title}</h3>
-                        <p>{build.saveDate} · {build.cardCount} cards · {build.faintMemory} FM</p>
-                        <div class="cz-card-chip-row">
-                          {build.cards.map((card) => (
-                            <span class="cz-card-chip">{card.count > 1 ? `${card.name} ×${card.count}` : card.name}</span>
-                          ))}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
+          {teams.map((team) => (
+            <section class="cz-selector-group">
+              <header class="cz-selector-group__header">
+                <div>
+                  <span>{team.label}</span>
+                  <p>{team.summary}</p>
                 </div>
-              </section>
-            );
-          })}
+                <strong>{formatScore(team.total)} TB</strong>
+              </header>
+
+              <div class="cz-selector-list">
+                {team.builds.map((build) => (
+                  <button
+                    class:list={["cz-selector-button", { "is-active": build.id === defaultBuildId }]}
+                    data-build-button
+                    data-build-id={build.id}
+                    id={build.id}
+                    type="button"
+                    aria-pressed={build.id === defaultBuildId ? "true" : "false"}
+                  >
+                    <img
+                      src={build.previewImage}
+                      alt=""
+                      width="256"
+                      height="144"
+                      loading="lazy"
+                    />
+
+                    <div class="cz-selector-button__body">
+                      <div class="cz-selector-button__top">
+                        <strong>{build.label}</strong>
+                        <span>{formatScore(build.score)} TB</span>
+                      </div>
+                      <h3>{build.focus}</h3>
+                      <p>{build.saveDate} · {build.cardCount} cards · {build.faintMemory} FM</p>
+                      <div class="cz-card-chip-row">
+                        {build.cards.map((card) => (
+                          <span class="cz-card-chip">{card.name}{card.count > 1 ? ` ×${card.count}` : ""}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </section>
+          ))}
         </div>
       </article>
 
@@ -297,31 +225,64 @@ const combinedTotal = team1Total + team2Total;
             <h2>Original screenshot and parsed data</h2>
           </div>
         </div>
+
         <div class="cz-sheet-stack">
-          {builds.map((build) => (
-            <article class="cz-sheet" data-build-sheet data-build-id={build.id} aria-hidden="true">
+          {allBuilds.map((build) => (
+            <article
+              class:list={["cz-sheet", { "is-active": build.id === defaultBuildId }]}
+              data-build-sheet
+              data-build-id={build.id}
+              aria-hidden={build.id === defaultBuildId ? "false" : "true"}
+            >
               <div class="cz-sheet__image">
-                <img src={build.image} alt={`${build.team} Build ${build.buildNum} full build screenshot`} width="1024" height="768" loading="lazy" />
+                <img
+                  src={build.previewImage}
+                  alt={`${build.teamLabel} ${build.label} full build screenshot`}
+                  width="1024"
+                  height="768"
+                  loading="lazy"
+                />
               </div>
+
               <div class="cz-sheet__meta">
                 <div class="cz-sheet__heading">
-                  <span>{build.team} · Build {build.buildNum}</span>
-                  <h3>{build.title}</h3>
-                  <p>{build.description}</p>
+                  <span>{build.teamLabel} · {build.label}</span>
+                  <h3>{build.focus}</h3>
+                  <p>{build.summary}</p>
                 </div>
+
                 <div class="cz-sheet__stats">
-                  <div><span>Score</span><strong>{build.score.toLocaleString()} TB</strong></div>
-                  <div><span>Save date</span><strong>{build.saveDate}</strong></div>
-                  <div><span>Card count</span><strong>{build.cardCount}</strong></div>
-                  <div><span>Faint memory</span><strong>{build.faintMemory}</strong></div>
-                  <div><span>Copy</span><strong>{build.copies}</strong></div>
-                  <div><span>Remove</span><strong>{build.removes}</strong></div>
+                  <div>
+                    <span>Score</span>
+                    <strong>{formatScore(build.score)} TB</strong>
+                  </div>
+                  <div>
+                    <span>Save date</span>
+                    <strong>{build.saveDate}</strong>
+                  </div>
+                  <div>
+                    <span>Card count</span>
+                    <strong>{build.cardCount}</strong>
+                  </div>
+                  <div>
+                    <span>Faint memory</span>
+                    <strong>{build.faintMemory}</strong>
+                  </div>
+                  <div>
+                    <span>Copy</span>
+                    <strong>{build.copyCount}</strong>
+                  </div>
+                  <div>
+                    <span>Remove</span>
+                    <strong>{build.removeCount}</strong>
+                  </div>
                 </div>
+
                 <div class="cz-sheet__cards">
                   {build.cards.map((card) => (
                     <div class="cz-sheet-card">
                       <strong>{card.name}</strong>
-                      <span>{card.count} {card.count === 1 ? "copy" : "copies"}</span>
+                      <span>{card.count > 1 ? `${card.count} copies` : "1 copy"}</span>
                     </div>
                   ))}
                 </div>
@@ -331,33 +292,31 @@ const combinedTotal = team1Total + team2Total;
         </div>
       </article>
     </section>
-  </section>
+  </div>
 </GameLayout>
 
-<script>
-  const defaultBuildId = "team-2-build-2";
-
+<script is:inline define:vars={{ defaultBuildId }}>
   const buttons = Array.from(document.querySelectorAll("[data-build-button]"));
   const featureCards = Array.from(document.querySelectorAll("[data-feature-card]"));
   const sheets = Array.from(document.querySelectorAll("[data-build-sheet]"));
 
-  function activateBuild(id: string) {
+  function activateBuild(id) {
     buttons.forEach((button) => {
-      const active = (button as HTMLElement).dataset.buildId === id;
-      (button as HTMLElement).classList.toggle("is-active", active);
-      (button as HTMLElement).setAttribute("aria-pressed", active ? "true" : "false");
+      const active = button.dataset.buildId === id;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
     });
 
     featureCards.forEach((card) => {
-      const active = (card as HTMLElement).dataset.buildId === id;
-      (card as HTMLElement).classList.toggle("is-active", active);
-      (card as HTMLElement).setAttribute("aria-hidden", active ? "false" : "true");
+      const active = card.dataset.buildId === id;
+      card.classList.toggle("is-active", active);
+      card.setAttribute("aria-hidden", active ? "false" : "true");
     });
 
     sheets.forEach((sheet) => {
-      const active = (sheet as HTMLElement).dataset.buildId === id;
-      (sheet as HTMLElement).classList.toggle("is-active", active);
-      (sheet as HTMLElement).setAttribute("aria-hidden", active ? "false" : "true");
+      const active = sheet.dataset.buildId === id;
+      sheet.classList.toggle("is-active", active);
+      sheet.setAttribute("aria-hidden", active ? "false" : "true");
     });
 
     if (history.replaceState) {
@@ -366,19 +325,19 @@ const combinedTotal = team1Total + team2Total;
   }
 
   const initialId = window.location.hash.slice(1);
-  const hasInitialBuild = initialId && buttons.some((button) => (button as HTMLElement).dataset.buildId === initialId);
+  const hasInitialBuild = initialId && buttons.some((button) => button.dataset.buildId === initialId);
   activateBuild(hasInitialBuild ? initialId : defaultBuildId);
 
   buttons.forEach((button) => {
     button.addEventListener("click", () => {
-      const id = (button as HTMLElement).dataset.buildId;
+      const id = button.dataset.buildId;
       if (id) activateBuild(id);
     });
   });
 
   window.addEventListener("hashchange", () => {
     const nextId = window.location.hash.slice(1);
-    if (nextId && buttons.some((button) => (button as HTMLElement).dataset.buildId === nextId)) {
+    if (nextId && buttons.some((button) => button.dataset.buildId === nextId)) {
       activateBuild(nextId);
     }
   });
@@ -386,523 +345,468 @@ const combinedTotal = team1Total + team2Total;
 
 <style>
   .cz-page {
+    --cz-cyan: #3cf4ff;
+    --cz-pink: #ff3daf;
+    --cz-blue: #80abff;
     position: relative;
     min-height: 100vh;
-    padding-bottom: 4rem;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at top center, rgba(78, 118, 255, 0.22), transparent 34%),
+      radial-gradient(circle at right center, rgba(255, 61, 175, 0.14), transparent 28%),
+      linear-gradient(180deg, #040914 0%, #02050b 100%);
   }
 
   .cz-page__noise {
-    position: fixed;
+    position: absolute;
     inset: 0;
+    background:
+      linear-gradient(90deg, transparent 0 8%, rgba(60, 244, 255, 0.08) 8.2% 8.6%, transparent 8.8% 100%),
+      linear-gradient(90deg, transparent 0 67%, rgba(255, 61, 175, 0.1) 67.3% 68.1%, transparent 68.2% 100%),
+      repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0 1px, transparent 1px 4px);
+    opacity: 0.58;
     pointer-events: none;
-    opacity: 0.035;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  }
+
+  .cz-overview,
+  .cz-top-grid,
+  .cz-panels {
+    position: relative;
+    z-index: 1;
+  }
+
+  .cz-overview {
+    padding-top: 2.3rem;
+    padding-bottom: 1.4rem;
+  }
+
+  .cz-back-link,
+  .cz-kicker,
+  .cz-side-card__label,
+  .cz-selector-group__header span,
+  .cz-sheet__heading span,
+  .cz-stat-grid span,
+  .cz-sheet__stats span,
+  .cz-total-pill span {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
   }
 
   .cz-back-link {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    color: var(--text-soft);
+    gap: 0.3rem;
+    color: rgba(193, 226, 255, 0.74);
     text-decoration: none;
-    font-size: 0.85rem;
-    margin-bottom: 0.75rem;
-    transition: color 150ms ease;
-  }
-
-  .cz-back-link:hover {
-    color: var(--accent);
+    margin-bottom: 0.9rem;
   }
 
   .cz-kicker {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--accent);
-    font-weight: 600;
-    margin-bottom: 0.5rem;
+    display: inline-flex;
+    color: rgba(183, 228, 255, 0.76);
+    margin: 0 0 0.8rem;
+  }
+
+  .cz-overview h1,
+  .cz-feature-card__copy h2,
+  .cz-panel__header h2,
+  .cz-sheet__heading h3 {
+    margin: 0;
+    color: #f8fcff;
+    font-family: "Rajdhani", "Space Grotesk", sans-serif;
+    font-weight: 800;
+    line-height: 1.04;
   }
 
   .cz-overview h1 {
-    font-size: clamp(1.8rem, 4vw, 2.6rem);
-    font-weight: 800;
-    line-height: 1.15;
-    margin-bottom: 0.75rem;
-    color: var(--ink);
+    font-size: clamp(2rem, 4vw, 3.35rem);
+  }
+
+  .cz-overview__summary,
+  .cz-feature-card__copy p,
+  .cz-selector-group__header p,
+  .cz-selector-button__body p,
+  .cz-sheet__heading p,
+  .cz-side-card p {
+    margin: 0;
+    color: rgba(195, 220, 246, 0.74);
+    line-height: 1.58;
   }
 
   .cz-overview__summary {
-    max-width: 640px;
-    color: var(--text-soft);
-    font-size: 1.05rem;
-    line-height: 1.6;
-    margin-bottom: 1.5rem;
+    max-width: 56rem;
+    margin-top: 0.8rem;
   }
 
   .cz-overview__totals {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.75rem;
+    gap: 0.8rem;
+    margin-top: 1.1rem;
   }
 
-  .cz-total-pill {
+  .cz-total-pill,
+  .cz-score-pill {
     display: inline-flex;
-    flex-direction: column;
-    padding: 0.6rem 1.2rem;
+    align-items: center;
+    gap: 0.55rem;
+    min-height: 2.45rem;
+    padding: 0.5rem 0.9rem;
     border-radius: 999px;
-    background: var(--surface-2);
-    border: 1px solid var(--line);
-    gap: 0.15rem;
+    background: rgba(10, 24, 42, 0.92);
+    border: 1px solid rgba(126, 178, 245, 0.18);
+    color: #f4fbff;
   }
 
-  .cz-total-pill span {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-soft);
-  }
-
-  .cz-total-pill strong {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--ink);
+  .cz-total-pill strong,
+  .cz-score-pill {
+    font-size: 0.95rem;
+    font-weight: 800;
   }
 
   .cz-total-pill--combined {
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(192, 132, 252, 0.08));
-    border-color: rgba(168, 85, 247, 0.25);
+    border-color: rgba(255, 61, 175, 0.26);
+  }
+
+  .cz-top-grid,
+  .cz-panels {
+    display: grid;
+    gap: 1.3rem;
   }
 
   .cz-top-grid {
-    display: grid;
-    grid-template-columns: 1fr 280px;
-    gap: 1.5rem;
-    margin-top: 2rem;
+    grid-template-columns: minmax(0, 1fr) 18rem;
+    align-items: start;
   }
 
-  @media (max-width: 900px) {
-    .cz-top-grid {
-      grid-template-columns: 1fr;
-    }
+  .cz-feature-stack,
+  .cz-sheet-stack {
+    min-width: 0;
   }
 
-  .cz-feature-stack {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
+  .cz-feature-card,
+  .cz-panel,
+  .cz-side-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 1.25rem;
+    background: rgba(7, 16, 31, 0.88);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
   }
 
-  .cz-feature-card {
-    display: grid;
-    grid-template-columns: 1fr 320px;
-    gap: 1.25rem;
-    padding: 1.5rem;
-    border-radius: var(--radius-lg, 20px);
-    background: var(--surface-2);
-    border: 1px solid var(--line);
-    transition: border-color 200ms ease, box-shadow 200ms ease;
+  .cz-feature-card::before,
+  .cz-panel::before,
+  .cz-side-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: linear-gradient(90deg, rgba(60, 244, 255, 0.95), rgba(128, 171, 255, 0.72), rgba(255, 61, 175, 0.92));
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
   }
 
-  .cz-feature-card:not(.is-active) {
+  .cz-feature-card,
+  .cz-sheet {
     display: none;
   }
 
-  .cz-feature-card.is-active {
+  .cz-feature-card.is-active,
+  .cz-sheet.is-active {
     display: grid;
   }
 
-  @media (max-width: 768px) {
-    .cz-feature-card.is-active {
-      grid-template-columns: 1fr;
-    }
+  .cz-feature-card {
+    grid-template-columns: minmax(18rem, 0.92fr) minmax(0, 1.08fr);
+    min-height: 25rem;
+  }
+
+  .cz-feature-card__copy,
+  .cz-panel {
+    padding: 1.25rem;
   }
 
   .cz-feature-card__copy {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+    display: grid;
+    align-content: center;
+    gap: 0.95rem;
   }
 
   .cz-feature-card__meta {
     display: flex;
-    gap: 0.5rem;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-soft);
+    gap: 0.6rem;
+    flex-wrap: wrap;
   }
 
-  .cz-feature-card__copy h2 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--ink);
-    margin: 0;
-  }
-
-  .cz-feature-card__copy p {
-    color: var(--text-soft);
-    font-size: 0.92rem;
-    line-height: 1.55;
-    margin: 0;
+  .cz-feature-card__meta span,
+  .cz-sheet__heading span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.9rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    background: rgba(11, 27, 46, 0.86);
+    border: 1px solid rgba(127, 179, 246, 0.16);
+    color: rgba(202, 231, 255, 0.82);
   }
 
   .cz-score-pill {
-    display: inline-flex;
-    padding: 0.35rem 0.85rem;
-    border-radius: 999px;
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(192, 132, 252, 0.1));
-    border: 1px solid rgba(168, 85, 247, 0.25);
-    font-weight: 700;
-    font-size: 0.95rem;
-    color: var(--accent);
     width: fit-content;
+    justify-content: center;
+    color: #ffffff;
   }
 
-  .cz-stat-grid {
+  .cz-stat-grid,
+  .cz-sheet__stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    gap: 0.5rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
   }
 
-  .cz-stat-grid div {
-    display: flex;
-    flex-direction: column;
-    gap: 0.1rem;
+  .cz-stat-grid div,
+  .cz-sheet__stats div,
+  .cz-sheet-card {
+    padding: 0.8rem 0.9rem;
+    border-radius: 1rem;
+    background: rgba(11, 25, 42, 0.88);
+    border: 1px solid rgba(126, 176, 239, 0.14);
   }
 
-  .cz-stat-grid div span {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-soft);
+  .cz-stat-grid span,
+  .cz-sheet__stats span,
+  .cz-sheet-card span {
+    display: block;
+    color: rgba(183, 221, 255, 0.58);
+    margin-bottom: 0.35rem;
   }
 
-  .cz-stat-grid div strong {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--ink);
+  .cz-stat-grid strong,
+  .cz-sheet__stats strong,
+  .cz-sheet-card strong {
+    color: #f7fbff;
+    font-size: 1rem;
+  }
+
+  .cz-feature-card__media img,
+  .cz-sheet__image img,
+  .cz-selector-button img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .cz-feature-card__media,
+  .cz-sheet__image {
+    min-height: 100%;
+  }
+
+  .cz-side-stack {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .cz-side-card {
+    padding: 1.1rem;
+    min-height: 11.8rem;
+    display: grid;
+    align-content: start;
+    gap: 0.75rem;
+  }
+
+  .cz-side-card__label,
+  .cz-selector-group__header span {
+    color: rgba(183, 228, 255, 0.72);
   }
 
   .cz-card-chip-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.35rem;
+    gap: 0.45rem;
   }
 
   .cz-card-chip {
     display: inline-flex;
-    padding: 0.25rem 0.6rem;
+    align-items: center;
+    min-height: 1.9rem;
+    padding: 0.25rem 0.65rem;
     border-radius: 999px;
-    background: var(--surface-3);
-    border: 1px solid var(--line);
+    background: rgba(14, 30, 49, 0.92);
+    border: 1px solid rgba(130, 179, 242, 0.16);
+    color: rgba(214, 235, 255, 0.82);
     font-size: 0.78rem;
-    color: var(--text);
-    font-weight: 500;
-  }
-
-  .cz-feature-card__media {
-    border-radius: 12px;
-    overflow: hidden;
-    background: var(--surface-3);
-  }
-
-  .cz-feature-card__media img {
-    width: 100%;
-    height: auto;
-    display: block;
-  }
-
-  .cz-side-stack {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .cz-side-card {
-    padding: 1.25rem;
-    border-radius: var(--radius-lg, 20px);
-    background: var(--surface-2);
-    border: 1px solid var(--line);
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .cz-side-card__label {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-soft);
-  }
-
-  .cz-side-card strong {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--ink);
-  }
-
-  .cz-side-card p {
-    font-size: 0.85rem;
-    color: var(--text-soft);
-    margin: 0;
+    font-weight: 600;
   }
 
   .cz-panels {
-    margin-top: 2rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .cz-panel {
-    padding: 1.5rem;
-    border-radius: var(--radius-lg, 20px);
-    background: var(--surface-2);
-    border: 1px solid var(--line);
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+    padding-top: 1.3rem;
+    padding-bottom: 4rem;
   }
 
   .cz-panel__header {
-    margin-bottom: 1.25rem;
-  }
-
-  .cz-panel__header h2 {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: var(--ink);
-    margin: 0.25rem 0 0;
+    margin-bottom: 1rem;
   }
 
   .cz-selector-groups {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-    gap: 1.25rem;
+    gap: 1rem;
   }
 
   .cz-selector-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+    border-radius: 1rem;
+    background: rgba(4, 11, 22, 0.78);
+    border: 1px solid rgba(126, 176, 239, 0.12);
+    padding: 1rem;
   }
 
   .cz-selector-group__header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
     gap: 1rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .cz-selector-group__header > div span {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--accent);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .cz-selector-group__header > div p {
-    font-size: 0.82rem;
-    color: var(--text-soft);
-    margin: 0.25rem 0 0;
-    line-height: 1.45;
+    align-items: flex-start;
+    margin-bottom: 0.9rem;
   }
 
   .cz-selector-group__header strong {
+    color: #ffffff;
     font-size: 1.05rem;
-    font-weight: 700;
-    color: var(--ink);
     white-space: nowrap;
   }
 
   .cz-selector-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    display: grid;
+    gap: 0.85rem;
   }
 
   .cz-selector-button {
     display: grid;
-    grid-template-columns: 120px 1fr;
-    gap: 0.75rem;
+    grid-template-columns: 9rem minmax(0, 1fr);
+    gap: 0.9rem;
     padding: 0.75rem;
-    border-radius: 12px;
-    border: 1px solid var(--line);
-    background: var(--surface-3);
-    cursor: pointer;
-    transition: border-color 200ms ease, background 200ms ease, box-shadow 200ms ease;
+    border-radius: 1rem;
     text-align: left;
+    cursor: pointer;
     color: inherit;
+    background: rgba(9, 19, 35, 0.82);
+    border: 1px solid rgba(118, 170, 238, 0.14);
+    transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+    font: inherit;
   }
 
-  .cz-selector-button:hover {
-    border-color: rgba(168, 85, 247, 0.3);
-    background: var(--surface-2);
+  .cz-selector-button:hover,
+  .cz-selector-button.is-active {
+    transform: translateY(-1px);
+    border-color: rgba(151, 211, 255, 0.28);
+    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.28);
   }
 
   .cz-selector-button.is-active {
-    border-color: rgba(168, 85, 247, 0.4);
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), transparent);
-    box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.15);
+    background: rgba(12, 28, 48, 0.92);
   }
 
   .cz-selector-button img {
-    width: 100%;
-    height: 68px;
-    object-fit: cover;
-    border-radius: 8px;
-    background: var(--surface-1);
+    border-radius: 0.85rem;
   }
 
   .cz-selector-button__body {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+    display: grid;
+    gap: 0.35rem;
     min-width: 0;
   }
 
   .cz-selector-button__top {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    gap: 0.8rem;
+    color: rgba(193, 224, 255, 0.7);
+    font-size: 0.86rem;
   }
 
   .cz-selector-button__top strong {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--ink);
+    color: #ffffff;
   }
 
-  .cz-selector-button__top span {
-    font-size: 0.78rem;
-    color: var(--accent);
-    font-weight: 600;
-  }
-
-  .cz-selector-button h3 {
-    font-size: 0.88rem;
-    font-weight: 600;
-    color: var(--ink);
+  .cz-selector-button__body h3 {
     margin: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .cz-selector-button p {
-    font-size: 0.75rem;
-    color: var(--text-soft);
-    margin: 0;
+    color: #f8fcff;
+    font-size: 1rem;
+    line-height: 1.12;
   }
 
   .cz-sheet-stack {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
+    min-width: 0;
   }
 
   .cz-sheet {
-    display: none;
-  }
-
-  .cz-sheet.is-active {
-    display: block;
-  }
-
-  .cz-sheet__image {
-    border-radius: 12px;
-    overflow: hidden;
-    margin-bottom: 1rem;
-    background: var(--surface-3);
-  }
-
-  .cz-sheet__image img {
-    width: 100%;
-    height: auto;
-    display: block;
-  }
-
-  .cz-sheet__meta {
-    display: flex;
-    flex-direction: column;
     gap: 1rem;
   }
 
-  .cz-sheet__heading span {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--accent);
-    font-weight: 600;
+  .cz-sheet__image img {
+    border-radius: 1rem;
   }
 
-  .cz-sheet__heading h3 {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--ink);
-    margin: 0.25rem 0;
-  }
-
-  .cz-sheet__heading p {
-    font-size: 0.88rem;
-    color: var(--text-soft);
-    margin: 0;
-    line-height: 1.5;
-  }
-
-  .cz-sheet__stats {
+  .cz-sheet__meta {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-    gap: 0.5rem;
-    padding: 0.75rem;
-    border-radius: 12px;
-    background: var(--surface-3);
-    border: 1px solid var(--line);
-  }
-
-  .cz-sheet__stats div {
-    display: flex;
-    flex-direction: column;
-    gap: 0.1rem;
-  }
-
-  .cz-sheet__stats div span {
-    font-size: 0.65rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-soft);
-  }
-
-  .cz-sheet__stats div strong {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--ink);
+    gap: 1rem;
   }
 
   .cz-sheet__cards {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 0.5rem;
-  }
-
-  .cz-sheet-card {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5rem 0.75rem;
-    border-radius: 8px;
-    background: var(--surface-3);
-    border: 1px solid var(--line);
-  }
-
-  .cz-sheet-card strong {
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: var(--ink);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.8rem;
   }
 
   .cz-sheet-card span {
-    font-size: 0.75rem;
-    color: var(--text-soft);
+    margin-bottom: 0;
+    font-size: 0.8rem;
+  }
+
+  @media (max-width: 1120px) {
+    .cz-top-grid,
+    .cz-panels,
+    .cz-feature-card {
+      grid-template-columns: 1fr;
+    }
+
+    .cz-side-stack {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 760px) {
+    .cz-overview {
+      padding-top: 2rem;
+    }
+
+    .cz-side-stack,
+    .cz-stat-grid,
+    .cz-sheet__stats,
+    .cz-sheet__cards {
+      grid-template-columns: 1fr;
+    }
+
+    .cz-selector-button {
+      grid-template-columns: 1fr;
+    }
+
+    .cz-selector-group__header,
+    .cz-selector-button__top {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .cz-feature-card__copy,
+    .cz-panel {
+      padding: 1rem;
+    }
   }
 </style>

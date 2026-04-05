@@ -42,27 +42,15 @@ export const games: GameEntry[] = [
   },
   {
     id: "chaoszero",
-    name: "Chaos Zero Nightmare",
+    name: "Chaos Zero",
     slug: "chaoszero",
-    description: "Great Rift domination hub with imported screenshot builds, card overlap, and tactical breakdowns",
+    description: "Nightmare mode high scores, character builds, and event archives",
     status: "active",
-    accentColor: "purple",
+    accentColor: "pink",
     icon: "/assets/chaoszero/icon.png",
     routes: [
       { label: "Event Scores", href: "/chaoszero/event-scores/" },
-      { label: "Build Database", href: "/chaoszero/builds/" },
-      { label: "Card Overlap", href: "/chaoszero/card-overlap/" },
     ],
-  },
-  {
-    id: "epicseven",
-    name: "Epic Seven",
-    slug: "epicseven",
-    description: "Tools, guides, and database information for Epic Seven",
-    status: "coming-soon",
-    accentColor: "orange",
-    icon: "/assets/epicseven/icon.png",
-    routes: [],
   },
 ];
 
