@@ -15,7 +15,7 @@ export interface GameEntry {
 export const games: GameEntry[] = [
   {
     id: "starsavior",
-    name: "StarSavior",
+    name: "Star Savior",
     slug: "starsavior",
     description: "Builds, tier lists, and progression guides sourced from Bullet's strategy sheet",
     status: "active",
